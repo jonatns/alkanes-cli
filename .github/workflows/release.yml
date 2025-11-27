@@ -8,25 +8,61 @@ on:
 permissions:
   contents: write
 
+env:
+  CARGO_TERM_COLOR: always
+
 jobs:
+  # First, run all checks
+  check:
+    name: Pre-release Checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install protoc
+        uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+      
+      - name: Run clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+      
+      - name: Run tests
+        run: cargo test --all-features
+
+  # Build binaries for all platforms
   build:
     name: Build ${{ matrix.target }}
+    needs: check
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             artifact: alkanes
+            archive: tar.gz
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            artifact: alkanes
+            archive: tar.gz
+            cross: true
           - os: macos-latest
             target: x86_64-apple-darwin
             artifact: alkanes
+            archive: tar.gz
           - os: macos-latest
             target: aarch64-apple-darwin
             artifact: alkanes
+            archive: tar.gz
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             artifact: alkanes.exe
+            archive: zip
 
     steps:
       - uses: actions/checkout@v4
@@ -42,41 +78,49 @@ jobs:
           rustup default stable
           rustup target add ${{ matrix.target }}
       
-      - name: Cache Cargo registry and build
+      - name: Install cross-compilation tools
+        if: matrix.cross
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+          echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
+      
+      - name: Cache Cargo
         uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: ${{ runner.os }}-${{ matrix.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ matrix.target }}-cargo-
+          key: ${{ runner.os }}-${{ matrix.target }}-cargo-release-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-${{ matrix.target }}-cargo-release-
       
       - name: Build
         run: cargo build --release --target ${{ matrix.target }}
       
       - name: Package (Unix)
-        if: matrix.os != 'windows-latest'
+        if: matrix.archive == 'tar.gz'
         run: |
           cd target/${{ matrix.target }}/release
-          tar -czvf alkanes-${{ matrix.target }}.tar.gz ${{ matrix.artifact }}
-          mv alkanes-${{ matrix.target }}.tar.gz ../../../
+          tar -czvf ../../../alkanes-${{ matrix.target }}.tar.gz ${{ matrix.artifact }}
       
       - name: Package (Windows)
-        if: matrix.os == 'windows-latest'
+        if: matrix.archive == 'zip'
+        shell: pwsh
         run: |
           cd target/${{ matrix.target }}/release
-          7z a alkanes-${{ matrix.target }}.zip ${{ matrix.artifact }}
-          mv alkanes-${{ matrix.target }}.zip ../../../
+          Compress-Archive -Path ${{ matrix.artifact }} -DestinationPath ../../../alkanes-${{ matrix.target }}.zip
       
-      - name: Upload artifacts
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: alkanes-${{ matrix.target }}
-          path: alkanes-${{ matrix.target }}.*
+          path: alkanes-${{ matrix.target }}.${{ matrix.archive }}
+          if-no-files-found: error
 
+  # Create GitHub release with all binaries
   release:
+    name: Create Release
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -86,10 +130,26 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts
-          merge-multiple: true
+      
+      - name: Prepare release files
+        run: |
+          mkdir release-files
+          find artifacts -type f \( -name "*.tar.gz" -o -name "*.zip" \) -exec mv {} release-files/ \;
+          ls -la release-files/
+      
+      - name: Generate checksums
+        run: |
+          cd release-files
+          sha256sum * > checksums.txt
+          cat checksums.txt
       
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: artifacts/*
+          files: |
+            release-files/*
           generate_release_notes: true
+          draft: false
+          prerelease: ${{ contains(github.ref, '-alpha') || contains(github.ref, '-beta') || contains(github.ref, '-rc') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
