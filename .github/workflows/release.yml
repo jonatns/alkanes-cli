@@ -112,7 +112,7 @@ jobs:
           Compress-Archive -Path ${{ matrix.artifact }} -DestinationPath ../../../alkanes-${{ matrix.target }}.zip
       
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: alkanes-${{ matrix.target }}
           path: alkanes-${{ matrix.target }}.${{ matrix.archive }}
