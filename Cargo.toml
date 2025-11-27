@@ -26,7 +26,6 @@ bitcoin = { version = "0.32.4", features = ["rand"] }
 bip39 = "2.0"
 rand = "0.8"
 dirs = "5.0"
-alkanes-runtime = { git = "https://github.com/kungfuflex/alkanes-rs" }
 alkanes-support = { git = "https://github.com/kungfuflex/alkanes-rs" }
 metashrew-support = { git = "https://github.com/sandshrewmetaprotocols/metashrew" }
 protorune-support = { git = "https://github.com/kungfuflex/alkanes-rs" }
