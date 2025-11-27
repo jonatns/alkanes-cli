@@ -1,0 +1,31 @@
+# Rust build artifacts
+target/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+
+# Wallet files (sensitive!)
+wallet.json
+*.wallet
+
+# Debug files
+script_hex_*.txt
+wasm_hex_*.txt
+*.log
+
+# Test artifacts
+*.wasm
+!tests/*.wasm
+

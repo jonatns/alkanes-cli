@@ -1,0 +1,33 @@
+[package]
+name = "alkanes-cli"
+version = "0.1.0"
+edition = "2021"
+description = "CLI for deploying and interacting with Alkanes smart contracts on Bitcoin"
+license = "MIT"
+repository = "https://github.com/jonatns/alkanes-cli"
+keywords = ["bitcoin", "alkanes", "smart-contracts", "cli"]
+categories = ["command-line-utilities", "cryptography::cryptocurrencies"]
+
+[[bin]]
+name = "alkanes"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4.4", features = ["derive"] }
+tokio = { version = "1.32", features = ["full"] }
+anyhow = "1.0"
+hex = "0.4"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+flate2 = "1.0"
+reqwest = { version = "0.11", features = ["json"] }
+wasmtime = "14.0"
+bitcoin = { version = "0.32.4", features = ["rand"] }
+bip39 = "2.0"
+rand = "0.8"
+dirs = "5.0"
+alkanes-runtime = { git = "https://github.com/kungfuflex/alkanes-rs" }
+alkanes-support = { git = "https://github.com/kungfuflex/alkanes-rs" }
+metashrew-support = { git = "https://github.com/sandshrewmetaprotocols/metashrew" }
+protorune-support = { git = "https://github.com/kungfuflex/alkanes-rs" }
+ordinals = "0.0.9"
