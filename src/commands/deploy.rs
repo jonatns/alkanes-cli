@@ -198,8 +198,7 @@ pub async fn run(args: DeployArgs) -> Result<()> {
     script_builder = script_builder.push_slice(empty_body_tag);
 
     // Chunk and push compressed WASM
-    let num_chunks =
-        (compressed_wasm.len() + MAX_SCRIPT_ELEMENT_SIZE - 1) / MAX_SCRIPT_ELEMENT_SIZE;
+    let num_chunks = compressed_wasm.len().div_ceil(MAX_SCRIPT_ELEMENT_SIZE);
     println!(
         "  Compressed WASM: {} chunks of up to {} bytes",
         num_chunks, MAX_SCRIPT_ELEMENT_SIZE

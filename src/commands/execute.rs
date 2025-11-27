@@ -1,8 +1,7 @@
-use clap::Args;
-use anyhow::{Result, Context};
-use alkanes_support::id::AlkaneId;
 use alkanes_support::cellpack::Cellpack;
-
+use alkanes_support::id::AlkaneId;
+use anyhow::{Context, Result};
+use clap::Args;
 
 #[derive(Args)]
 pub struct ExecuteArgs {
@@ -42,7 +41,9 @@ pub async fn run(args: ExecuteArgs) -> Result<()> {
     // This requires knowing the exact serialization format of Cellpack which is likely in alkanes-support
     // Assuming standard serialization if available, otherwise just debug print.
 
-    println!("To execute this, you would construct a transaction with this payload in the witness data.");
+    println!(
+        "To execute this, you would construct a transaction with this payload in the witness data."
+    );
 
     Ok(())
 }
