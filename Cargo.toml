@@ -29,4 +29,4 @@ dirs = "5.0"
 alkanes-support = { git = "https://github.com/kungfuflex/alkanes-rs" }
 metashrew-support = { git = "https://github.com/sandshrewmetaprotocols/metashrew" }
 protorune-support = { git = "https://github.com/kungfuflex/alkanes-rs" }
-ordinals = "0.0.9"
+ordinals = "0.0.15"
