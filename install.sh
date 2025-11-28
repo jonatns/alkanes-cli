@@ -6,7 +6,7 @@ set -e
 
 REPO="jonatns/alkanes-cli"
 BINARY_NAME="alkanes"
-INSTALL_DIR="${HOME}/.local/bin"
+INSTALL_DIR="${CARGO_HOME:-$HOME/.cargo}/bin"
 
 # Detect OS and architecture
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
@@ -73,9 +73,10 @@ echo ""
 # Check if in PATH
 if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
     echo "⚠️  $INSTALL_DIR is not in your PATH."
-    echo "   Add this to your shell profile (~/.bashrc, ~/.zshrc, etc.):"
+    echo "   If you have Rust installed, it should already be in your PATH."
+    echo "   Otherwise, add this to your shell profile (~/.bashrc, ~/.zshrc, etc.):"
     echo ""
-    echo "   export PATH=\"\$HOME/.local/bin:\$PATH\""
+    echo "   export PATH=\"\$HOME/.cargo/bin:\$PATH\""
     echo ""
 fi
 

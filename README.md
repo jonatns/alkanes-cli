@@ -1,3 +1,5 @@
+[![CI](https://github.com/jonatns/alkanes-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/jonatns/alkanes-cli/actions/workflows/ci.yml)
+
 # Alkanes CLI
 
 A command-line tool for deploying, executing, and managing Alkanes smart contracts on Bitcoin.

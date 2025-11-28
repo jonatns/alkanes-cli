@@ -16,9 +16,9 @@ struct Cli {
 enum Commands {
     /// Deploy a contract
     Deploy(commands::deploy::DeployArgs),
-    /// Execute a message on a contract
+    /// Execute a message on a contract (broadcasts tx)
     Execute(commands::execute::ExecuteArgs),
-    /// Simulate a contract execution
+    /// Simulate a contract call (dry-run via RPC, no tx)
     Simulate(commands::simulate::SimulateArgs),
     /// Generate blocks (Regtest only)
     GenBlocks(commands::gen_blocks::GenBlocksArgs),
