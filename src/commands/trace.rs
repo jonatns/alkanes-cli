@@ -1,7 +1,16 @@
 use anyhow::{Context, Result};
 use clap::Args;
 use reqwest::Client;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct TraceResponse {
+    pub status: Option<u32>,
+    pub error: Option<String>,
+    pub gas_used: Option<u64>,
+    pub result: Option<serde_json::Value>,
+}
 
 #[derive(Args)]
 pub struct TraceArgs {
@@ -30,7 +39,7 @@ pub struct TraceArgs {
     pub verbose: bool,
 }
 
-pub async fn run(args: TraceArgs) -> Result<()> {
+pub async fn run(args: TraceArgs) -> Result<TraceResponse> {
     println!("Tracing transaction: {}", args.txid);
 
     // IMPORTANT: The alkanes_trace RPC requires the txid to be reversed (byte-order reversed)
@@ -166,6 +175,23 @@ pub async fn run(args: TraceArgs) -> Result<()> {
             } else {
                 println!("Trace result:");
                 println!("{}", serde_json::to_string_pretty(result)?);
+
+                let status = result
+                    .get("status")
+                    .and_then(|v| v.as_u64())
+                    .map(|v| v as u32);
+                let error = result
+                    .get("error")
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string());
+                let gas_used = result.get("gas_used").and_then(|v| v.as_u64());
+
+                Ok(TraceResponse {
+                    status,
+                    error,
+                    gas_used,
+                    result: Some(result.clone()),
+                })
             }
         } else if result.is_object() && result.as_object().unwrap().is_empty() {
             eprintln!("Trace result is an empty object.");
@@ -182,16 +208,34 @@ pub async fn run(args: TraceArgs) -> Result<()> {
         } else {
             println!("Trace result:");
             println!("{}", serde_json::to_string_pretty(result)?);
+
+            // Parse status and error from the result object if available
+            // The structure depends on the indexer response.
+            // Assuming result is an object with status/error fields or similar.
+            // If result is an array (execution trace), we might need to look at the last item?
+            // For now, let's just return the raw result wrapped in TraceResponse
+            // and try to extract status/error if they exist at the top level of result.
+
+            let status = result
+                .get("status")
+                .and_then(|v| v.as_u64())
+                .map(|v| v as u32);
+            let error = result
+                .get("error")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
+            let gas_used = result.get("gas_used").and_then(|v| v.as_u64());
+
+            Ok(TraceResponse {
+                status,
+                error,
+                gas_used,
+                result: Some(result.clone()),
+            })
         }
     } else {
         eprintln!("No 'result' field found in response.");
         eprintln!("Full response: {}", serde_json::to_string_pretty(&body)?);
-        eprintln!("\nRequest details:");
-        eprintln!("  Txid (original): {}", args.txid);
-        eprintln!("  Txid (reversed): {}", reversed_txid_hex);
-        eprintln!("  Vout: {}", args.vout);
         anyhow::bail!("No result field in response");
     }
-
-    Ok(())
 }

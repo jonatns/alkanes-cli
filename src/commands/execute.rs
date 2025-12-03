@@ -78,7 +78,7 @@ fn parse_input(input: &str) -> Vec<u128> {
     encode_string_as_u128s(input)
 }
 
-pub async fn run(args: ExecuteArgs) -> Result<()> {
+pub async fn run(args: ExecuteArgs) -> Result<String> {
     // Parse target
     let parts: Vec<&str> = args.target.split(':').collect();
     if parts.len() != 2 {
@@ -111,36 +111,28 @@ pub async fn run(args: ExecuteArgs) -> Result<()> {
         anyhow::bail!("No UTXOs available for address {}", address_str);
     }
 
-    // Select UTXO
     let (utxo_txid, utxo_vout, utxo_value) = &utxos[0];
     println!(
         "Using UTXO: {}:{} ({} sats)",
         utxo_txid, utxo_vout, utxo_value
     );
 
-    // Build calldata: [target_block, target_tx, ...parsed_inputs]
     let mut calldata: Vec<u128> = vec![target_block, target_tx];
     for input in &args.inputs {
         calldata.extend(parse_input(input));
     }
 
-    // Build Protostone (same encoding as deploy.rs)
     use protorune_support::protostone::{split_bytes, Protostone};
     use protorune_support::utils::encode_varint_list;
 
-    let encoded_calldata = encode_varint_list(&calldata);
-
-    // Prefix with length byte
-    let mut message_with_length = Vec::with_capacity(encoded_calldata.len() + 1);
-    message_with_length.push(encoded_calldata.len() as u8);
-    message_with_length.extend(&encoded_calldata);
+    let message = encode_varint_list(&calldata);
 
     let protostone = Protostone {
         burn: None,
-        message: message_with_length.clone(),
+        message,
+        pointer: Some(0),
         edicts: vec![],
         refund: Some(0),
-        pointer: Some(0),
         from: None,
         protocol_tag: 1,
     };
@@ -154,7 +146,10 @@ pub async fn run(args: ExecuteArgs) -> Result<()> {
     enciphered_values.push(protostone_varints.len() as u128);
     enciphered_values.extend(&protostone_varints);
 
+    println!("Enciphered values (u128s): {:?}", enciphered_values);
+
     let mut enciphered_varints = encode_varint_list(&enciphered_values);
+    println!("Enciphered varints (bytes): {:?}", enciphered_varints);
 
     // Pad to multiple of 15 bytes
     let remainder = enciphered_varints.len() % 15;
@@ -283,16 +278,16 @@ pub async fn run(args: ExecuteArgs) -> Result<()> {
     if args.dry_run {
         println!("\n[DRY RUN] Transaction not broadcast");
         println!("Raw tx: {}", tx_hex);
-        return Ok(());
+        return Ok(txid.to_string());
     }
 
     // Broadcast
     let broadcast_result = broadcast_tx(&client, &args, &tx_hex).await?;
     println!("\n✅ Transaction broadcast!");
     println!("Txid: {}", broadcast_result);
-    println!("\nTrace with: alkanes trace --txid {} --vout 2", txid);
+    println!("\nTrace with: alkanes trace --txid {} --vout 4", txid);
 
-    Ok(())
+    Ok(broadcast_result)
 }
 
 async fn get_utxos(

@@ -26,3 +26,4 @@ rand = "0.8"
 dirs = "5.0"
 alkanes-support = { git = "https://github.com/kungfuflex/alkanes-rs" }
 protorune-support = { git = "https://github.com/kungfuflex/alkanes-rs" }
+serde_yaml = "0.9.34"

@@ -1,3 +1,4 @@
+pub mod apply;
 pub mod deploy;
 pub mod execute;
 pub mod gen_blocks;
