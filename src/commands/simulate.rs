@@ -38,35 +38,28 @@ pub struct SimulateArgs {
     pub raw: bool,
 }
 
-/// Encode a string as null-terminated u128 values (little-endian)
-/// This matches how alkanes-runtime decodes strings
-fn encode_string_as_u128s(s: &str) -> Vec<u128> {
-    let mut bytes: Vec<u8> = s.as_bytes().to_vec();
-    bytes.push(0); // null terminator
-
-    let mut result = Vec::new();
-
-    // Pack bytes into u128 values (16 bytes each)
-    for chunk in bytes.chunks(16) {
-        let mut arr = [0u8; 16];
-        arr[..chunk.len()].copy_from_slice(chunk);
-        let value = u128::from_le_bytes(arr);
-        result.push(value);
-    }
-
-    result
+/// Encode a string as a single u128 (little-endian)
+/// - Up to 16 bytes of ASCII
+/// - Truncated if longer
+/// - Zero-padded if shorter
+fn encode_string_as_u128(s: &str) -> u128 {
+    let bytes = s.as_bytes();
+    let mut buf = [0u8; 16];
+    let len = bytes.len().min(16);
+    buf[..len].copy_from_slice(&bytes[..len]);
+    u128::from_le_bytes(buf)
 }
 
-/// Parse an input value - if it's a valid number, return it as u128
-/// Otherwise, encode it as a string (null-terminated u128 values)
+/// Parse an input value:
+/// - If it's a valid number, return it as a single u128
+/// - Otherwise, pack the ASCII text into a single u128
 fn parse_input(input: &str) -> Vec<u128> {
     // Try to parse as number first
     if let Ok(num) = input.parse::<u128>() {
-        return vec![num];
+        vec![num]
+    } else {
+        vec![encode_string_as_u128(input)]
     }
-
-    // Otherwise treat as string
-    encode_string_as_u128s(input)
 }
 
 /// Decode return data and display in multiple formats
